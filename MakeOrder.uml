@@ -1,0 +1,89 @@
+@startuml
+skinparam sequenceActorStyle actor
+skinparam monochrome true
+autonumber "0."
+
+actor Customer
+participant Application
+participant OrderService
+participant PaymentService
+participant NotificationService
+participant Database
+
+note over Customer, Application: Customer is already logged in
+
+Customer -> Application: Request menu
+activate Application
+Application -> OrderService: Request menu data
+activate OrderService
+OrderService -> Database: Get menu items
+activate Database
+Database --> OrderService: Send menu items
+deactivate Database
+OrderService --> Application: Send menu data
+deactivate OrderService
+Application --> Customer: Display menu
+deactivate Application
+
+loop Adding items
+    Customer -> Application: Add item to cart
+    activate Application
+    Application --> Customer: Confirm item added
+    deactivate Application
+end
+
+Customer -> Application: Checkout (cart + delivery info)
+activate Application
+
+Application -> OrderService: Send new order request
+activate OrderService
+OrderService -> Database: Save new order (status "Pending")
+activate Database
+Database --> OrderService: Send saved order data
+deactivate Database
+OrderService --> Application: Confirm order creation
+deactivate Application
+
+Application --> Customer: Show payment options
+
+Customer -> Application: Select payment method
+activate Application
+
+alt Pay by card 
+    Customer -> Application: Submit card details
+    Application -> PaymentService: Send payment request
+    activate PaymentService
+    
+    PaymentService --> Application: Send payment confirmation
+    deactivate PaymentService
+    Application -> OrderService: Update order status to "Paid"
+
+else Pay by cash
+    Application -> OrderService: Update order status to "Pay on delivery"
+end
+
+activate OrderService
+OrderService -> Database: Save updated status
+activate Database
+Database --> OrderService: "OK"
+deactivate Database
+
+note over OrderService, NotificationService: Notify restaurant about new order
+OrderService -> NotificationService: Send notification
+activate NotificationService
+NotificationService --> OrderService: "Sent"
+deactivate NotificationService
+
+OrderService --> Application: Send final confirmation
+deactivate OrderService
+
+Application --> Customer: Display order confirmation
+
+|||
+destroy Application
+destroy Customer
+destroy OrderService
+destroy PaymentService
+destroy NotificationService
+destroy Database
+@enduml

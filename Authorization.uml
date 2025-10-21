@@ -1,0 +1,51 @@
+@startuml
+skinparam sequenceActorStyle actor
+skinparam monochrome true
+autonumber "0."
+
+actor Customer
+participant Application
+participant AuthService
+participant Database
+
+Customer -> Application: Enter login and password
+activate Application
+
+Application -> AuthService: Send login request
+activate AuthService
+
+alt Log in with email
+    AuthService -> Database: Find user by email
+    activate Database
+    Database --> AuthService: Send user data
+    deactivate Database
+else Log in with phone number .
+    AuthService -> Database: Find user by phone number
+    activate Database
+    Database --> AuthService: Send user data
+    deactivate Database
+end
+
+alt Credentials are correct
+    AuthService -> AuthService: Validate password
+    AuthService -> AuthService: Create session
+    AuthService --> Application: Send success response
+    deactivate AuthService
+    
+    Application --> Customer: Display "Login successful"
+    deactivate Application
+else Credentials are incorrect
+    AuthService --> Application: Send error response
+    deactivate AuthService
+    
+    Application --> Customer: Display "Login failed"
+    deactivate Application
+end
+
+
+
+destroy Customer
+destroy AuthService
+destroy Application
+destroy Database
+@enduml
